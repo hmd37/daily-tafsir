@@ -1,14 +1,13 @@
+import asyncio
 import os
 
 import requests
 from bs4 import BeautifulSoup
 from dotenv import load_dotenv
-from fastapi import FastAPI
 from telegram import Bot
 
 load_dotenv()
 
-app = FastAPI(title="Daily Ayat API")
 
 TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
 TELEGRAM_CHAT_ID = os.getenv("TELEGRAM_CHAT_ID")
@@ -45,7 +44,6 @@ def scrape_daily_ayat_and_tafsir():
     }
 
 
-@app.get("/")
 async def send_daily_tafsir():
     """Scrape ayet & tefsir and send to Telegram group."""
     data = scrape_daily_ayat_and_tafsir()
@@ -65,7 +63,6 @@ async def send_daily_tafsir():
         parse_mode="HTML",
     )
 
-    return {
-        "status": "sent",
-        "data": data,
-    }
+
+if __name__ == "__main__":
+    asyncio.run(send_daily_tafsir())

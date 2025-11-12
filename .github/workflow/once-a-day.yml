@@ -1,0 +1,32 @@
+name: Daily Tafsir Bot
+
+on:
+  schedule:
+    # Run every day at 07:00 Baku time (UTC+4)
+    # 7 AM Baku = 03:00 UTC
+    - cron: "0 3 * * *"
+  workflow_dispatch:  # allows manual run from Actions tab
+
+jobs:
+  run-tafsir:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt
+
+      - name: Run Daily Tafsir script
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        run: |
+          python daily_tafsir/main.py
