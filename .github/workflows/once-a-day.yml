@@ -2,10 +2,8 @@ name: Daily Tafsir Bot
 
 on:
   schedule:
-    # Run every day at 07:00 Baku time (UTC+4)
-    # 7 AM Baku = 03:00 UTC
     - cron: "0 3 * * *"
-  workflow_dispatch:  # allows manual run from Actions tab
+  workflow_dispatch:  
 
 jobs:
   run-tafsir:

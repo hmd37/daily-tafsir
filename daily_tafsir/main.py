@@ -5,6 +5,7 @@ import requests
 from bs4 import BeautifulSoup
 from dotenv import load_dotenv
 from telegram import Bot
+from telegram.error import NetworkError, TelegramError
 
 load_dotenv()
 
@@ -57,11 +58,20 @@ async def send_daily_tafsir():
         f"🕊 <i>Kaynak: {data['tafsir_link']}</i>"
     )
 
-    await bot.send_message(
-        chat_id=TELEGRAM_CHAT_ID,
-        text=msg,
-        parse_mode="HTML",
-    )
+    for attempt in range(1, 3):
+        try:
+            await bot.send_message(
+                chat_id=TELEGRAM_CHAT_ID,
+                text=msg,
+                parse_mode="HTML",
+            )
+            break
+
+        except (NetworkError, TelegramError, Exception) as e:
+            if attempt == 2:
+                raise
+            else:
+                await asyncio.sleep(2)
 
 
 if __name__ == "__main__":
