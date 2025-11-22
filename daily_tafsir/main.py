@@ -1,5 +1,6 @@
 import asyncio
 import os
+import textwrap
 
 import requests
 from bs4 import BeautifulSoup
@@ -9,11 +10,30 @@ from telegram.error import NetworkError, TelegramError
 
 load_dotenv()
 
-
 TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN").strip()
 TELEGRAM_CHAT_ID = os.getenv("TELEGRAM_CHAT_ID").strip()
 
 bot = Bot(token=TELEGRAM_BOT_TOKEN)
+
+
+def wrap_text(text, limit=4000):
+    return textwrap.wrap(text, width=limit, replace_whitespace=False)
+
+
+async def send_with_retry(text):
+    """Send message with retry logic."""
+    for attempt in range(1, 3):
+        try:
+            await bot.send_message(
+                chat_id=TELEGRAM_CHAT_ID,
+                text=text,
+                parse_mode="Markdown",
+            )
+            break
+        except (NetworkError, TelegramError) as e:
+            if attempt == 2:
+                raise
+            await asyncio.sleep(2)
 
 
 def scrape_daily_ayat_and_tafsir():
@@ -46,32 +66,22 @@ def scrape_daily_ayat_and_tafsir():
 
 
 async def send_daily_tafsir():
-    """Scrape ayet & tefsir and send to Telegram group."""
     data = scrape_daily_ayat_and_tafsir()
 
-    msg = (
-        "<b>📖 Günün Ayeti</b>\n\n"
-        f"{data['ayat']}\n\n"
-        "━━━━━━━━━━━━━━━\n"
-        "<b>📘 Tefsir</b>\n\n"
-        f"{data['tafsir']}\n\n"
-        f"🕊 <i>Kaynak: {data['tafsir_link']}</i>"
-    )
+    header = f"📖 *Günün Ayeti*\n\n{data['ayat']}\n\n━━━━━━━━━━━━━━━\n📘 *Tefsir*\n"
 
-    for attempt in range(1, 3):
-        try:
-            await bot.send_message(
-                chat_id=TELEGRAM_CHAT_ID,
-                text=msg,
-                parse_mode="HTML",
-            )
-            break
+    tafsir_parts = wrap_text(data["tafsir"])
+    total_parts = len(tafsir_parts)
 
-        except (NetworkError, TelegramError, Exception) as e:
-            if attempt == 2:
-                raise
-            else:
-                await asyncio.sleep(2)
+    await send_with_retry(header)
+
+    for index, part in enumerate(tafsir_parts, start=1):
+        part_header = f"*({index}/{total_parts})*\n\n"
+        footer = f"\n\n🕊 Kaynak: {data['tafsir_link']}" if index == total_parts else ""
+
+        text = f"{part_header}{part}{footer}"
+
+        await send_with_retry(text)
 
 
 if __name__ == "__main__":
